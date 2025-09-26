@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="512"
+   height="512"
+   viewBox="0 0 512 512"
+   version="1.1"
+   id="svg1"
+   inkscape:export-filename="Tungsten-512x512.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#505050"
+     bordercolor="#ffffff"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="1"
+     inkscape:deskcolor="#505050"
+     inkscape:document-units="px" />
+  <defs
+     id="defs1">
+    <rect
+       x="281.46011"
+       y="52.039345"
+       width="289.99664"
+       height="236.36734"
+       id="rect3" />
+    <inkscape:path-effect
+       effect="fillet_chamfer"
+       id="path-effect3"
+       is_visible="true"
+       lpeversion="1"
+       nodesatellites_param="F,0,0,1,0,0,0,1 @ F,0,0,1,0,16.10346,0,1 @ F,0,0,1,0,21.52821,0,1 @ F,0,0,1,0,16.10346,0,1 @ F,0,0,1,0,30.517982,0,1 @ F,0,1,1,0,0,0,1"
+       radius="0"
+       unit="px"
+       method="auto"
+       mode="F"
+       chamfer_steps="1"
+       flexible="false"
+       use_knot_distance="true"
+       apply_no_radius="true"
+       apply_with_radius="true"
+       only_selected="false"
+       hide_knots="false" />
+    <linearGradient
+       id="linearGradient2"
+       inkscape:collect="always">
+      <stop
+         style="stop-color:#9ffff8;stop-opacity:1;"
+         offset="0"
+         id="stop2" />
+      <stop
+         style="stop-color:#ffc3fe;stop-opacity:1;"
+         offset="1"
+         id="stop3" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient2"
+       id="linearGradient3"
+       x1="0"
+       y1="-256"
+       x2="512"
+       y2="-256"
+       gradientUnits="userSpaceOnUse" />
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <path
+       style="fill:url(#linearGradient3);fill-opacity:1;stroke:none;stroke-width:10.04;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:0"
+       id="path1"
+       sodipodi:type="arc"
+       sodipodi:cx="256"
+       sodipodi:cy="-256"
+       sodipodi:rx="256"
+       sodipodi:ry="256"
+       sodipodi:start="4.717625"
+       sodipodi:end="4.7154837"
+       sodipodi:open="true"
+       sodipodi:arc-type="arc"
+       d="M 257.34041,-511.99649 A 256,256 0 0 1 511.99717,-254.79663 256,256 0 0 1 254.93367,-0.00222084 256,256 0 0 1 0.00168668,-256.92929 256,256 0 0 1 256.79225,-511.99877"
+       transform="rotate(90)" />
+    <path
+       style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:15.04;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:0;stroke-dasharray:none;stroke-opacity:1"
+       d="m 41.967213,138.77158 c 101.341357,-2.82813 102.625547,167.85559 100.512157,221.73791 -0.34853,8.88608 1.95039,9.45821 5.47882,1.29439 l 42.14565,-97.51345 a 6.1867278,6.1867278 7.3406928 0 1 11.79466,1.51944 l 15.01631,98.21482 a 3.6046177,3.6046177 3.9243935 0 0 7.01865,0.48149 l 47.71873,-160.66762 c 4.79869,-16.15706 13.01138,-43.94393 26.6587,-53.55153 20.71941,-14.58629 36.86725,17.02226 36.86725,17.02226"
+       id="path3"
+       sodipodi:nodetypes="cccccc"
+       inkscape:path-effect="#path-effect3"
+       inkscape:original-d="M 41.967213,138.77158 C 162.27322,135.41421 141.5694,376.58579 141.5694,376.58579 l 57.07541,-132.05683 20.70382,135.41421 60.99236,-205.35956 c 28.5377,-58.7541 54.83715,-7.27432 54.83715,-7.27432"
+       transform="matrix(1.1978659,0,0,1.1978659,-14.090246,13.205778)" />
+    <text
+       xml:space="preserve"
+       id="text3"
+       style="font-weight:bold;font-size:144px;line-height:1.5;font-family:'Segoe Print';-inkscape-font-specification:'Segoe Print Bold';word-spacing:0px;white-space:pre;shape-inside:url(#rect3);fill:#000000;fill-opacity:1;stroke:none;stroke-width:5.84;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:0;stroke-dasharray:none;stroke-opacity:1"
+       transform="translate(-25.460937,-27.978142)"><tspan
+         x="281.46094"
+         y="206.09312"
+         id="tspan2"><tspan
+           style="font-weight:normal;font-family:'ProFont IIx Nerd Font Mono';-inkscape-font-specification:'ProFont IIx Nerd Font Mono'"
+           id="tspan1">74</tspan></tspan></text>
+  </g>
+</svg>
