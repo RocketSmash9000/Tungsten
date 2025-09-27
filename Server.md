@@ -44,7 +44,7 @@ Messages are ordered from least recent first to most recent last.
 ```json
 {
   "messageID": {
-	"content": "Message content here",
+    "content": "Message content here",
     "time": "Here the time it was sent"
   },
   "otherMessageID": {

@@ -1,4 +1,9 @@
 import config.Config;
+import util.Logger;
+import spark.Spark;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import security.TokenVault;
 
 import static config.Config.configDir;
 
@@ -26,24 +31,33 @@ public class WebServer {
 
 		// Ensure config dir exists
 		try {
-			java.nio.file.Files.createDirectories(java.nio.file.Paths.get(configDir));
+			Files.createDirectories(Paths.get(configDir));
 		} catch (Exception ignored) {}
+
+		// Initialize secure token vault (TPM if available, else encrypted file store)
+		try {
+			TokenVault.init(Paths.get(configDir));
+			Logger.info("Token store initialized: " + TokenVault.get().getStoreType());
+		} catch (Exception e) {
+			Logger.error("Failed to initialize token vault: " + e.getMessage());
+		}
 
 		// Start web server
 		startServer();
 	}
 
+	@SuppressWarnings("D")
 	private static void startServer() {
 		// Configure port
 		int port = Config.getInt("Server.port", 8080);
-		spark.Spark.port(port);
+		Spark.port(port);
 
   		// Static files served from src/main/resources/public
-		spark.Spark.staticFiles.location("/public");
-		spark.Spark.staticFiles.expireTime(600); // 10 minutes
+		Spark.staticFiles.location("/public");
+		Spark.staticFiles.expireTime(600); // 10 minutes
 
 		// Serve icons from classpath /icons at /icons/*
-		spark.Spark.get("/icons/*", (req, res) -> {
+		Spark.get("/icons/*", (req, res) -> {
 			String splat = (req.splat() != null && req.splat().length > 0) ? req.splat()[0] : "";
 			String resourcePath = "/icons/" + splat;
 			try (java.io.InputStream is = WebServer.class.getResourceAsStream(resourcePath)) {
@@ -60,7 +74,7 @@ public class WebServer {
 		});
 
 		// Security headers
-		spark.Spark.before((req, res) -> {
+		Spark.before((req, res) -> {
 			res.header("X-Content-Type-Options", "nosniff");
 			res.header("X-Frame-Options", "DENY");
 			res.header("Referrer-Policy", "no-referrer");
@@ -74,7 +88,7 @@ public class WebServer {
 		});
 
 		// Preflight handler
-		spark.Spark.options("/*", (req, res) -> {
+		Spark.options("/*", (req, res) -> {
 			String reqHeaders = req.headers("Access-Control-Request-Headers");
 			String reqMethod = req.headers("Access-Control-Request-Method");
 			if (reqHeaders != null) res.header("Access-Control-Allow-Headers", reqHeaders);
@@ -83,7 +97,7 @@ public class WebServer {
 		});
 
 		// Health check
-		spark.Spark.get("/health", (req, res) -> {
+		Spark.get("/health", (req, res) -> {
 			res.type("application/json");
 			var map = new java.util.LinkedHashMap<String, Object>();
 			map.put("status", "ok");
@@ -92,19 +106,19 @@ public class WebServer {
 		});
 
 		// Not found handler returns JSON
-		spark.Spark.notFound((req, res) -> {
+		Spark.notFound((req, res) -> {
 			res.type("application/json");
 			return "{\"error\":\"not_found\"}";
 		});
 
 		// Exception handler hides details from client
-		spark.Spark.exception(Exception.class, (ex, req, res) -> {
+		Spark.exception(Exception.class, (ex, req, res) -> {
 			res.type("application/json");
 			res.status(500);
 			res.body("{\"error\":\"internal_error\"}");
-			try { util.Logger.error("Unhandled exception: " + ex.getMessage()); } catch (Throwable ignored) {}
+			try { Logger.error("Unhandled exception: " + ex.getMessage()); } catch (Throwable ignored) {}
 		});
 
-		try { util.Logger.info("Server started on port " + port); } catch (Throwable ignored) {}
+		try { Logger.info("Server started on port " + port); } catch (Throwable ignored) {}
 	}
 }
