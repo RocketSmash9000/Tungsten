@@ -3,16 +3,12 @@ package security;
 import util.Logger;
 
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Optional;
-import java.nio.file.Files;
-
-// Windows registry access for TPM detection
-import com.sun.jna.platform.win32.Advapi32Util;
-import com.sun.jna.platform.win32.WinReg;
 
 /**
  * TokenVault selects the best available TokenStore for the current platform.
- * Preference order: TPM-backed -> encrypted file store.
+ * Preference order: Platform-specific secure store -> encrypted file store.
  */
 public class TokenVault {
     private static volatile TokenVault INSTANCE;
@@ -25,40 +21,63 @@ public class TokenVault {
         this.storeType = storeType;
     }
 
+    @SuppressWarnings("D")
     public static TokenVault init(Path baseDir) throws Exception {
+        if (baseDir == null) {
+            throw new IllegalArgumentException("baseDir cannot be null");
+        }
+        
+        // Validate and normalize path to prevent directory traversal
+        Path normalizedBase = baseDir.toAbsolutePath().normalize();
+        String basePath = normalizedBase.toString();
+        if (basePath.contains("../") || basePath.contains("..\\")) {
+            throw new IllegalArgumentException("Invalid base directory path");
+        }
+        
         if (INSTANCE == null) {
             synchronized (TokenVault.class) {
                 if (INSTANCE == null) {
                     TokenStore chosen;
                     String type;
 
-                    if (isWindows()) {
+                    String os = System.getProperty("os.name", "").toLowerCase();
+
+                    if (os.contains("windows")) {
                         try {
-                            chosen = new WindowsDpapiTokenStore(baseDir);
+                            chosen = new WindowsDpapiTokenStore(normalizedBase);
                             type = "WINDOWS_DPAPI";
                             Logger.info("Using Windows DPAPI token store");
                         } catch (Throwable t) {
-                            Logger.warn("Windows DPAPI unavailable: " + t.getMessage() + ". Falling back to platform store or file.");
-                            try {
-                                chosen = new TpmTokenStore(baseDir);
-                                type = "PLATFORM";
-                            } catch (Throwable t2) {
-                                Logger.warn("Platform store unavailable: " + t2.getMessage() + ". Falling back to encrypted file store.");
-                                chosen = new FileTokenStore(baseDir);
-                                type = "FILE";
-                            }
-                        }
-                    } else {
-                        try {
-                            // On macOS/Linux, prefer platform-secure stores encapsulated by TpmTokenStore
-                            chosen = new TpmTokenStore(baseDir);
-                            type = "PLATFORM";
-                        } catch (Throwable t) {
-                            Logger.warn("Platform store unavailable: " + t.getMessage() + ". Falling back to encrypted file store.");
-                            chosen = new FileTokenStore(baseDir);
+                            Logger.warn("Windows DPAPI unavailable. Falling back to encrypted file store.");
+                            chosen = new FileTokenStore(normalizedBase);
                             type = "FILE";
                         }
+                    } else if (os.contains("mac")) {
+                        try {
+                            chosen = new MacKeychainTokenStore();
+                            type = "MACOS_KEYCHAIN";
+                            Logger.info("Using macOS Keychain token store");
+                        } catch (Throwable t) {
+                            Logger.warn("macOS Keychain unavailable. Falling back to encrypted file store.");
+                            chosen = new FileTokenStore(normalizedBase);
+                            type = "FILE";
+                        }
+                    } else if (os.contains("linux")) {
+                        try {
+                            chosen = new LinuxSecretServiceTokenStore();
+                            type = "LINUX_SECRET_SERVICE";
+                            Logger.info("Using Linux Secret Service token store");
+                        } catch (Throwable t) {
+                            Logger.warn("Linux Secret Service unavailable. Falling back to encrypted file store.");
+                            chosen = new FileTokenStore(normalizedBase);
+                            type = "FILE";
+                        }
+                    } else {
+                        chosen = new FileTokenStore(normalizedBase);
+                        type = "FILE";
+                        Logger.info("Using encrypted file token store");
                     }
+
                     INSTANCE = new TokenVault(chosen, type);
                 }
             }
@@ -73,66 +92,29 @@ public class TokenVault {
 
     public String getStoreType() { return storeType; }
 
+    // Legacy single token methods
     public void saveToken(String token) throws Exception { store.saveToken(token); }
-
     public Optional<String> loadToken() throws Exception { return store.loadToken(); }
-
     public void clear() throws Exception { store.clear(); }
 
-    private static TokenStore tryTpmOrFile(Path baseDir) throws Exception {
-        if (isTpmAvailable()) {
-            try {
-                Logger.info("Attempting TPM-backed token store...");
-                return new TpmTokenStore(baseDir);
-            } catch (Throwable t) {
-                Logger.warn("TPM store unavailable: " + t.getMessage() + ". Falling back to encrypted file store.");
-            }
-        }
-        Logger.info("Using encrypted file token store at: " + baseDir.toString());
-        return new FileTokenStore(baseDir);
+    // Enhanced multi-key storage methods
+    public void saveData(String key, String data) throws Exception {
+        store.saveData(key, data);
     }
 
-    private static boolean isTpmAvailable() {
-        try {
-            String os = System.getProperty("os.name", "").toLowerCase();
-            if (os.contains("windows")) {
-                // Windows: Check registry for TPM presence
-                final String key = "SOFTWARE\\Microsoft\\TPM\\State";
-                boolean present = false;
-                boolean ready = false;
-                try {
-                    int tpmPresent = Advapi32Util.registryGetIntValue(WinReg.HKEY_LOCAL_MACHINE, key, "TpmPresent");
-                    present = (tpmPresent == 1);
-                } catch (Throwable ignored) {}
-                try {
-                    int tpmReady = Advapi32Util.registryGetIntValue(WinReg.HKEY_LOCAL_MACHINE, key, "TpmReady");
-                    ready = (tpmReady == 1);
-                } catch (Throwable ignored) {}
-                Logger.debug("TPM detection (Windows): present=" + present + ", ready=" + ready);
-                return present; // consider available if present; readiness is optional for key storage
-            }
-            if (os.contains("linux")) {
-                // Linux: Presence indicated by TPM char devices
-                boolean hasTpmRm = Files.exists(Path.of("/dev/tpmrm0"));
-                boolean hasTpm = Files.exists(Path.of("/dev/tpm0"));
-                Logger.debug("TPM detection (Linux): /dev/tpmrm0=" + hasTpmRm + ", /dev/tpm0=" + hasTpm);
-                return hasTpmRm || hasTpm;
-            }
-            // macOS typically lacks a generic TPM interface
-            Logger.debug("TPM detection: unsupported OS for TPM detection");
-            return false;
-        } catch (Throwable t) {
-            Logger.warn("TPM detection error: " + t.getMessage());
-            return false;
-        }
+    public Optional<String> loadData(String key) throws Exception {
+        return store.loadData(key);
     }
 
-    private static boolean isWindows() {
-        try {
-            String os = System.getProperty("os.name", "").toLowerCase();
-            return os.contains("windows");
-        } catch (Throwable ignored) {
-            return false;
-        }
+    public void saveMultipleData(Map<String, String> dataMap) throws Exception {
+        store.saveMultipleData(dataMap);
+    }
+
+    public Map<String, String> loadAllData() throws Exception {
+        return store.loadAllData();
+    }
+
+    public void clearData(String key) throws Exception {
+        store.clearData(key);
     }
 }

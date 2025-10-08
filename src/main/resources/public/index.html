@@ -5,38 +5,161 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Tungsten Client</title>
   <link rel="icon" type="image/png" href="/icons/Tungsten-512x512.png">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="card">
-    <h1>Tungsten Client</h1>
-    <p class="muted">Backend is running and can serve static files. This page is a placeholder for the HTML/CSS/JS frontend.</p>
-
-    <div class="row">
-      <input id="endpoint" value="/health" aria-label="endpoint" />
-      <button id="btn">Test</button>
+  <div class="container">
+    <div class="header">
+      <img src="/icons/Tungsten-512x512.png" alt="Tungsten" class="logo">
+      <h1>Tungsten Client</h1>
     </div>
-    <pre id="out" style="white-space: pre-wrap; margin-top: 1rem;">Ready.</pre>
+
+    <!-- Loading Spinner -->
+    <div id="loading" class="loading hidden">
+      <div class="spinner"></div>
+      <p>Please wait...</p>
+    </div>
+
+    <!-- Error/Success Messages -->
+    <div id="message" class="message hidden">
+      <span id="messageText"></span>
+      <button id="closeMessage" class="close-btn">&times;</button>
+    </div>
+
+    <!-- Login Form -->
+    <div id="loginForm" class="form-container">
+      <h2>Login</h2>
+      <form id="login">
+        <div class="input-group">
+          <label for="loginUsername">Username</label>
+          <input type="text" id="loginUsername" name="username" placeholder="john_doe#1234" required>
+        </div>
+        <div class="input-group">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" name="password" required>
+        </div>
+        <button type="submit" class="btn-primary">Login</button>
+        <div class="form-links">
+          <a href="#" id="showRegister">Don't have an account? Register</a>
+          <a href="#" id="showForgotPassword">Forgot Password?</a>
+        </div>
+      </form>
+    </div>
+
+    <!-- Register Form -->
+    <div id="registerForm" class="form-container hidden">
+      <h2>Register</h2>
+      <form id="register">
+        <div class="input-group">
+          <label for="registerUsername">Username</label>
+          <input type="text" id="registerUsername" name="username" placeholder="john_doe" required>
+          <small>3-20 characters, alphanumeric with hyphens/underscores</small>
+        </div>
+        <div class="input-group">
+          <label for="registerEmail">Email</label>
+          <input type="email" id="registerEmail" name="email" required>
+        </div>
+        <div class="input-group">
+          <label for="registerPassword">Password</label>
+          <input type="password" id="registerPassword" name="password" required>
+          <small>Minimum 8 characters</small>
+        </div>
+        <div class="input-group">
+          <label for="confirmPassword">Confirm Password</label>
+          <input type="password" id="confirmPassword" name="confirmPassword" required>
+        </div>
+        <button type="submit" class="btn-primary">Register</button>
+        <div class="form-links">
+          <a href="#" id="showLogin">Already have an account? Login</a>
+        </div>
+      </form>
+    </div>
+
+    <!-- Email Verification Form -->
+    <div id="verificationForm" class="form-container hidden">
+      <h2>Email Verification</h2>
+      <p>Please enter the 6-digit code sent to your email address.</p>
+      <form id="verification">
+        <div class="input-group">
+          <label for="verificationCode">Verification Code</label>
+          <input type="text" id="verificationCode" name="code" placeholder="123456" maxlength="6" required>
+        </div>
+        <button type="submit" class="btn-primary">Verify</button>
+        <div class="form-links">
+          <a href="#" id="resendCode">Resend Code</a>
+          <a href="#" id="backToLogin">Back to Login</a>
+        </div>
+      </form>
+    </div>
+
+    <!-- Forgot Password Form -->
+    <div id="forgotPasswordForm" class="form-container hidden">
+      <h2>Forgot Password</h2>
+      <p>Enter your email address and we'll send you a reset link.</p>
+      <form id="forgotPassword">
+        <div class="input-group">
+          <label for="forgotEmail">Email</label>
+          <input type="email" id="forgotEmail" name="email" required>
+        </div>
+        <button type="submit" class="btn-primary">Send Reset Link</button>
+        <div class="form-links">
+          <a href="#" id="backToLoginFromForgot">Back to Login</a>
+        </div>
+      </form>
+    </div>
+
+    <!-- Dashboard (shown after successful login) -->
+    <div id="dashboard" class="dashboard hidden">
+      <div class="user-info">
+        <h2>Welcome, <span id="userName"></span>!</h2>
+        <p>Email: <span id="userEmail"></span></p>
+        <p>Status: <span id="verificationStatus"></span></p>
+      </div>
+      <div class="dashboard-actions">
+        <button id="logoutBtn" class="btn-secondary">Logout</button>
+        <button id="changePasswordBtn" class="btn-secondary">Change Password</button>
+      </div>
+
+      <!-- API Test Section -->
+      <div class="api-test">
+        <h3>API Test</h3>
+        <div class="row">
+          <input id="endpoint" value="/v1/health" aria-label="endpoint" />
+          <button id="testBtn" class="btn-secondary">Test</button>
+        </div>
+        <pre id="out">Ready.</pre>
+      </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="changePasswordModal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Change Password</h3>
+          <button id="closeChangePassword" class="close-btn">&times;</button>
+        </div>
+        <form id="changePassword">
+          <div class="input-group">
+            <label for="currentPassword">Current Password</label>
+            <input type="password" id="currentPassword" name="currentPassword" required>
+          </div>
+          <div class="input-group">
+            <label for="newPassword">New Password</label>
+            <input type="password" id="newPassword" name="newPassword" required>
+          </div>
+          <div class="input-group">
+            <label for="confirmNewPassword">Confirm New Password</label>
+            <input type="password" id="confirmNewPassword" name="confirmNewPassword" required>
+          </div>
+          <div class="modal-actions">
+            <button type="button" id="cancelChangePassword" class="btn-secondary">Cancel</button>
+            <button type="submit" class="btn-primary">Change Password</button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 
-  <script>
-    const $ = sel => document.querySelector(sel);
-    $('#btn').addEventListener('click', async () => {
-      const ep = $('#endpoint').value || '/health';
-      $('#out').textContent = 'Requesting ' + ep + '...';
-      try {
-        const r = await fetch(ep, { credentials: 'include' });
-        const t = await r.text();
-        const isJson = (r.headers.get('content-type')||'').includes('application/json');
-        $('#out').textContent = isJson ? JSON.stringify(JSON.parse(t), null, 2) : t;
-        if (r.ok) {
-          console.log('OK');
-        } else {
-          console.warn('HTTP ' + r.status);
-        }
-      } catch (e) {
-        $('#out').textContent = 'Error: ' + e.message;
-      }
-    });
-  </script>
+  <script src="auth.js"></script>
 </body>
 </html>
