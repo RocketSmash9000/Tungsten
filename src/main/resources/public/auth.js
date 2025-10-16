@@ -1,4 +1,6 @@
 // Tungsten Authentication System with Secure Local Storage
+// noinspection D
+
 class TungstenAuth {
     constructor() {
         this.baseURL = 'http://213.165.83.239:2606/v1';
@@ -156,31 +158,6 @@ class TungstenAuth {
             return null;
         }
     }
-
-    async updateLocalAccessToken(newAccessToken) {
-        try {
-            const response = await fetch(`${this.localAPI}/api/session/update-token`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    access_token: newAccessToken
-                })
-            });
-
-            const result = await response.json();
-            if (response.ok) {
-                this.tokens.access = newAccessToken;
-                console.log('Access token updated in secure storage');
-                return result;
-            } else {
-                throw new Error(result.message || 'Failed to update access token');
-            }
-        } catch (error) {
-            console.error('Failed to update access token locally:', error);
-            throw error;
-        }
-    }
-
     async updateLocalUserData(userData) {
         try {
             const response = await fetch(`${this.localAPI}/api/session/update-user`, {
@@ -245,7 +222,20 @@ class TungstenAuth {
 
             if (response.ok) {
                 const data = await response.json();
-                return data.access_token_status === 'valid' && data.refresh_token_status === 'valid';
+                
+                // If refresh token is valid but access token is expired, refresh it
+                if (data.refresh_token_status === 'valid' && data.access_token_status === 'invalid') {
+                    console.log('Access token expired, refreshing with refresh token...');
+                    return await this.refreshAccessToken();
+                }
+                
+                // Both tokens valid
+                if (data.access_token_status === 'valid' && data.refresh_token_status === 'valid') {
+                    return true;
+                }
+                
+                // Refresh token is invalid/expired, session is dead
+                return false;
             }
             return false;
         } catch (error) {
@@ -254,23 +244,113 @@ class TungstenAuth {
         }
     }
 
-    // Load current user information
-    async loadUserInfo() {
+    // Refresh access token using refresh token
+    async refreshAccessToken() {
         try {
-            const response = await fetch(`${this.baseURL}/users/me`, {
+            console.log('Refreshing access token...');
+            const response = await fetch(`${this.baseURL}/auth/refresh-tokens`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    access_token: this.tokens.access,
-                    user_id: this.currentUser.user_id || this.currentUser.userId
+                    user_id: this.currentUser.user_id || this.currentUser.userId,
+                    refresh_token: this.tokens.refresh
                 })
             });
 
             if (response.ok) {
+                const data = await response.json();
+                console.log('Access token refreshed successfully');
+                
+                // Update the access token in memory (don't store in secure storage - it's short-lived)
+                this.tokens.access = data.access_token;
+                
+                // Note: We keep the access token in memory only, as it expires in 15 minutes
+                // The refresh token remains in secure storage and is used to get new access tokens
+                console.log('New access token obtained (valid for 15 minutes)');
+                return true;
+            } else {
+                const errorData = await response.json();
+                console.error('Failed to refresh access token:', errorData.error);
+                return false;
+            }
+        } catch (error) {
+            console.error('Token refresh error:', error);
+            return false;
+        }
+    }
+
+    // Load current user information
+    async loadUserInfo() {
+        try {
+            // Debug: Log what we're sending
+            /*
+            const requestBody = {
+                access_token: this.tokens.access,
+                user_id: this.currentUser.user_id || this.currentUser.userId
+            };
+            console.log('Requesting user info with:', {
+                user_id: requestBody.user_id,
+                user_id_type: typeof requestBody.user_id,
+                access_token_present: !!requestBody.access_token
+            });
+             */
+
+            const response = await fetch(`${this.baseURL}/users/me`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestBody)
+            });
+
+            if (response.status === 401 || response.status === 422) {
+                // Access token might be expired, try refreshing
+                console.log(`User info request failed (${response.status}), attempting to refresh token...`);
+                const refreshed = await this.refreshAccessToken();
+                
+                if (refreshed) {
+                    // Retry the request with new access token
+                    const retryBody = {
+                        access_token: this.tokens.access,
+                        user_id: this.currentUser.user_id || this.currentUser.userId
+                    };
+                    console.log('Retrying user info request with refreshed token');
+
+                    const retryResponse = await fetch(`${this.baseURL}/users/me`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(retryBody)
+                    });
+
+                    if (retryResponse.ok) {
+                        const userData = await retryResponse.json();
+                        // Keep the user_id from the original userData
+                        userData.user_id = this.currentUser.user_id || this.currentUser.userId;
+                        this.currentUser = userData;
+                        await this.updateLocalUserData(userData);
+                        this.updateUserDisplay();
+                        console.log('User info loaded successfully after token refresh');
+                        return;
+                    } else {
+                        const errorData = await retryResponse.json();
+                        console.error('Retry failed:', errorData);
+                    }
+                }
+                
+                // If refresh failed or retry failed, clear session
+                console.error('Failed to load user info after token refresh');
+                return;
+            }
+
+            if (response.ok) {
                 const userData = await response.json();
+                // Keep the user_id from the original userData
+                userData.user_id = this.currentUser.user_id || this.currentUser.userId;
                 this.currentUser = userData;
                 await this.updateLocalUserData(userData);
                 this.updateUserDisplay();
+                console.log('User info loaded successfully');
+            } else {
+                const errorData = await response.json();
+                console.error('Failed to load user info:', errorData);
             }
         } catch (error) {
             console.error('Failed to load user info:', error);
