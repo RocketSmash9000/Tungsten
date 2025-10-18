@@ -208,7 +208,7 @@ class TungstenAuth {
             // Don't throw error as this might be called during cleanup
         }
     }
-// Validate stored tokens
+    // Validate stored tokens
     async validateTokens() {
         try {
             const response = await fetch(`${this.baseURL}/auth/validate-tokens`, {
@@ -279,21 +279,13 @@ class TungstenAuth {
         }
     }
 
-    // Load current user information
+    // Patch: define requestBody before the initial fetch so user info is requested correctly
     async loadUserInfo() {
         try {
-            // Debug: Log what we're sending
-            /*
             const requestBody = {
                 access_token: this.tokens.access,
                 user_id: this.currentUser.user_id || this.currentUser.userId
             };
-            console.log('Requesting user info with:', {
-                user_id: requestBody.user_id,
-                user_id_type: typeof requestBody.user_id,
-                access_token_present: !!requestBody.access_token
-            });
-             */
 
             const response = await fetch(`${this.baseURL}/users/me`, {
                 method: 'POST',
@@ -305,7 +297,7 @@ class TungstenAuth {
                 // Access token might be expired, try refreshing
                 console.log(`User info request failed (${response.status}), attempting to refresh token...`);
                 const refreshed = await this.refreshAccessToken();
-                
+
                 if (refreshed) {
                     // Retry the request with new access token
                     const retryBody = {

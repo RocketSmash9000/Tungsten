@@ -2,6 +2,7 @@ package security;
 
 import com.sun.jna.platform.win32.Crypt32Util;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -74,24 +75,13 @@ public class WindowsDpapiTokenStore implements TokenStore {
         }
     }
 
+	@SuppressWarnings("D")
     @Override
     public void clear() throws Exception {
         // Clear legacy single token file
-        if (Files.exists(tokenFile)) {
-            try {
-                // Secure overwrite with random data
-                long fileSize = Files.size(tokenFile);
-                if (fileSize > 0 && fileSize < Integer.MAX_VALUE) {
-                    SecureRandom random = new SecureRandom();
-                    byte[] randomData = new byte[(int) fileSize];
-                    random.nextBytes(randomData);
-                    Files.write(tokenFile, randomData, StandardOpenOption.WRITE);
-                }
-            } catch (Exception ignored) {}
-            Files.deleteIfExists(tokenFile);
-        }
-        
-        // Clear all data files
+		writeToken(tokenFile);
+
+		// Clear all data files
         if (Files.exists(dataDir)) {
             try (var stream = Files.list(dataDir)) {
                 stream.filter(p -> p.toString().endsWith(".dpapi"))
@@ -111,6 +101,22 @@ public class WindowsDpapiTokenStore implements TokenStore {
             } catch (Exception ignored) {}
         }
     }
+
+	private void writeToken(Path tokenFile) throws IOException {
+		if (Files.exists(tokenFile)) {
+		    try {
+		        // Secure overwrite with random data
+		        long fileSize = Files.size(tokenFile);
+		        if (fileSize > 0 && fileSize < Integer.MAX_VALUE) {
+		            SecureRandom random = new SecureRandom();
+		            byte[] randomData = new byte[(int) fileSize];
+		            random.nextBytes(randomData);
+		            Files.write(tokenFile, randomData, StandardOpenOption.WRITE);
+		        }
+		    } catch (Exception ignored) {}
+		    Files.deleteIfExists(tokenFile);
+		}
+	}
 
 	@Override
 	public void saveData(String key, String data) throws Exception {
@@ -203,18 +209,6 @@ public class WindowsDpapiTokenStore implements TokenStore {
 		String safeKey = key.replaceAll("[^a-zA-Z0-9._-]", "_");
 		Path keyFile = dataDir.resolve(safeKey + ".dpapi");
 
-		if (Files.exists(keyFile)) {
-			try {
-				// Secure overwrite with random data
-				long fileSize = Files.size(keyFile);
-				if (fileSize > 0 && fileSize < Integer.MAX_VALUE) {
-					SecureRandom random = new SecureRandom();
-					byte[] randomData = new byte[(int) fileSize];
-					random.nextBytes(randomData);
-					Files.write(keyFile, randomData, StandardOpenOption.WRITE);
-				}
-			} catch (Exception ignored) {}
-			Files.deleteIfExists(keyFile);
-		}
+		writeToken(keyFile);
 	}
 }
